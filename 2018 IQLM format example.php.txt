@@ -1,0 +1,57 @@
+
+
+<div align="Center"><b>Longbow Men [OFFICIAL After 60 Arrows]</b><br/>&nbsp;</div>
+
+<div id="Accordion">
+<div class="accordion"><div class="title open" id="acc_LM"><span>Longbow Men [OFFICIAL After 60 Arrows]</span></div><div class="text title open" id="acc_LM-text"><table class="Griglia" width="100%" cellpadding="0" cellspacing="0">
+
+<tr>
+<th><div nowrap class="Center title" >Pos.</div></th>
+<th><div nowrap class="Center title" >Athlete</div></th>
+<th colspan="2"><div nowrap class="Center title">Country Code</div></th>
+<th><div nowrap class="Center title" >Country</div></th>
+<th colspan="2"><div nowrap class="Center title">18m-1</div></th>
+<th colspan="2"><div nowrap class="Center title">18m-2</div></th>
+<th><div nowrap class="Center title" >Tot.</div></th>
+<th><div nowrap class="Center title" >10</div></th>
+<th><div nowrap class="Center title" >9</div></th>
+</tr>
+
+<tr class="row1 first">
+<td class="col Rank">1</td>
+<td class="col Athlete">NEWNES Alex</td>
+<td class="Flag"></td>
+<td class="col CoCode">1759</td>
+<td class="col Country">Aber A (Uni)</td>
+<td class="col Dists">209</td>
+<td class="col Dists">1</td>
+<td class="col Dists">201</td>
+<td class="col Dists">1</td>
+<td class="col Score">410</td>
+<td class="col Golds">2</td>
+<td class="col Golds">11</td>
+</tr>
+
+<tr class="row1">
+<td class="col Rank">2</td>
+<td class="col Athlete">MORRISON Douglas</td>
+<td class="Flag"></td><td class="col CoCode">896</td>
+<td class="col Country">Durham Uni AC</td>
+<td class="col Dists">138</td>
+<td class="col Dists">2</td>
+<td class="col Dists">118</td>
+<td class="col Dists">5</td>
+<td class="col Score">256</td>
+<td class="col Golds">1</td>
+<td class="col Golds">6</td>
+</tr>
+
+<tr class="row1">
+<td class="col Rank">3</td>
+<td class="col Athlete">PHILLIPS Nathan</td><td class="Flag"></td><td class="col CoCode">1373</td><td class="col Country">The Swansea Uni</td><td class="col Dists">95</td><td class="col Dists">6</td><td class="col Dists">150</td><td class="col Dists">2</td><td class="col Score">245</td><td class="col Golds">2</td><td class="col Golds">6</td></tr><tr class="row1"><td class="col Rank">4</td><td class="col Athlete">PHILLIPS James</td><td class="Flag"></td><td class="col CoCode">808</td><td class="col Country">Leeds Uni AC</td><td class="col Dists">116</td><td class="col Dists">3</td><td class="col Dists">124</td><td class="col Dists">3</td><td class="col Score">240</td><td class="col Golds">2</td><td class="col Golds">2</td></tr><tr class="row1"><td class="col Rank">5</td><td class="col Athlete">BARHAM Joe</td><td class="Flag"></td><td class="col CoCode">1380</td><td class="col Country">Uni of Exeter AC</td><td class="col Dists">98</td><td class="col Dists">5</td><td class="col Dists">119</td><td class="col Dists">4</td><td class="col Score">217</td><td class="col Golds">1</td><td class="col Golds">3</td></tr><tr class="row1"><td class="col Rank">6</td><td class="col Athlete">ADEYEMI Alexander</td><td class="Flag"></td><td class="col CoCode">2684</td><td class="col Country">Team UWS Archery (Uni)</td><td class="col Dists">102</td><td class="col Dists">4</td><td class="col Dists">111</td><td class="col Dists">6</td><td class="col Score">213</td><td class="col Golds">1</td><td class="col Golds">5</td></tr><tr class="row1"><td class="col Rank">7</td><td class="col Athlete">GREGSON-MCLEOD Alexander</td><td class="Flag"></td><td class="col CoCode">203</td><td class="col Country">Edinburgh Uni AC Students</td><td class="col Dists">92</td><td class="col Dists">8</td><td class="col Dists">88</td><td class="col Dists">7</td><td class="col Score">180</td><td class="col Golds">0</td><td class="col Golds">1</td></tr><tr class="row1"><td class="col Rank">8</td><td class="col Athlete">KIPPAX Alexander</td><td class="Flag"></td><td class="col CoCode">1906</td><td class="col Country">Chester Students Union AC</td><td class="col Dists">94</td><td class="col Dists">7</td><td class="col Dists">79</td><td class="col Dists">8</td><td class="col Score">173</td><td class="col Golds">1</td><td class="col Golds">2</td></tr></table></div></div>
+</div>
+
+<div style="text-align: center;margin-top:1em" onclick="location.href='./'">Back</div>
+</div>
+</body>
+</html>
