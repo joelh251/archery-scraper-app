@@ -8,3 +8,7 @@ From there it uses the html brackets <></> to extract the data, and puts it into
 
 The URL list excel is used to iterate all possible names for the .php file, because they are formatted very inconsistently - e.g. Novice Men Compound might be abbreviated NMC, or MNC, or CMN, etc. 
 Use this excel file to generate the list of possible urls for all rounds of a given tournament. Then the Python code reads the list, and tries to download all the .php files listed.
+
+The 2 example php files have been edited just to (1) remove excess data that does not contain any scores, and 
+(2) show the table of results in a nice readable format with each html brackets <></> in a new line.
+They will not work with the code (since a bunch of newline chars have been added)
