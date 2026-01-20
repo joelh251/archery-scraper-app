@@ -1,4 +1,4 @@
-Running the compiler:
+Running the compiler:\\
 Create a folder in which this code will be saved.
 Within that folder, create 2 new folders named "data" and "compiled_data".
 Save the scraped BUCS data into the "data" folder.
