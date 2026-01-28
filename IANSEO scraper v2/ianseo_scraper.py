@@ -405,6 +405,9 @@ def main():
 
     print("\nComplete") #Report when program is complete.
 
+    return
+
 
 if __name__ == "__main__":
+
     main()
