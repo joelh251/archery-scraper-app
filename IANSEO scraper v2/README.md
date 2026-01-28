@@ -19,6 +19,8 @@ Provides progress updates while the scraper runs.
 
 ## Running the scraper
 
+Download the "IANSEO scraper v2" directory.  
+
 The input for the scraper is a "urls" directory of Excel sheets.  
 Each Excel sheet should contain a single column of urls for each year a competition has run.  
 Each competion should be stored a separate Excel sheet formatted as "competitionName_urls.xlsx".
