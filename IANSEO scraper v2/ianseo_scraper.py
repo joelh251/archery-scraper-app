@@ -286,8 +286,14 @@ def Parse_html_to_excel(filepath):
         df.insert(data_start_idx + 3,"X.2",[t[1] if len(t) > 1 else "" for t in temp])
     
     #Extract competition name and year to save as columns
+    #It's Ianseo so of course the competition name is saved in 2 different ways
     center = soup.select_one(".results-header-center")
-    competition_name = center.find("div").get_text(strip=True)
+    if center is not None:
+        competition_name = center.find("div").get_text(strip=True)
+    else:
+        header = soup.find("table", id="TourHeader")
+        th = header.find("th") if header else None
+        competition_name = th.get_text(separator="\n", strip=True).split("\n")[0]
 
     df.insert(0, "Competition", competition_name)
     df.insert(0, "Year", year)
