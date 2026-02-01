@@ -33,6 +33,8 @@ Modification history:
         Added documentation for the code
         Added a progress tracker
         Improved overall efficiency.
+    01-02-2026:
+        Changed parse_html_to_excel() to record competition name and year as columns in each sheet
 """
 
 
@@ -213,7 +215,7 @@ def Parse_html_to_excel(filepath):
                 max_cols = len(cells)
             data.append(cells)
     
-    #Add blank heaer names if there is more columns than headers
+    #Add blank header names if there is more columns than headers
     if len(list_header) < max_cols:
         list_header += [""] * (max_cols - len(list_header))
     
@@ -283,6 +285,13 @@ def Parse_html_to_excel(filepath):
         df.iloc[:, data_start_idx + 2] = [t[0] if len(t) > 0 else "" for t in temp]
         df.insert(data_start_idx + 3,"X.2",[t[1] if len(t) > 1 else "" for t in temp])
     
+    #Extract competition name and year to save as columns
+    center = soup.select_one(".results-header-center")
+    competition_name = center.find("div").get_text(strip=True)
+
+    df.insert(0, "Competition", competition_name)
+    df.insert(0, "Year", year)
+
     #Save extracted data as an excel sheet in "excel_data" directory.
     df = df.reset_index(drop=True)
     df.to_excel(save_path, index=False)
