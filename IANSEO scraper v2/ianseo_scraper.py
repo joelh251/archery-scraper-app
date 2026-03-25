@@ -13,16 +13,13 @@ Description:
     For each url supplied, it will create an excel workbook.
 
 Temporary files: 
-    3 temporary directories will be created and automatically deleted after the program finishes. 
-    These are "excel_data", "ianseo_pages", and "raw_data".
+    "excel_data" directory will be created and removed once the scraper has finished. 
 
 Input: 
-    "urls" directory containing excel sheets of urls to ianseo pages.
-    Excel sheet must be formatted as "competitionName_urls.xlsx"
+    "urls.xlsx" sheet containing urls to ianseo pages.
 
 Output: 
-    "results" directory containing subdirectories for each input excel sheet. 
-    Subdirectories will contain 1 multisheet excel workbook for each url in an excel sheet.
+    "results" directory containing multi-sheet excel workbooks for each input url.
 
 Modification history:
     22-01-2026: 
@@ -39,8 +36,9 @@ Modification history:
         Improved handling of broken urls
     24-03-2026:
         Improved speed
+        Reduced generation of temporary files
+        Changed data saving system - each url saved to an excel sheet with the competition name and year
 """
-
 
 from bs4 import BeautifulSoup
 import re
@@ -51,102 +49,65 @@ import shutil
 import sys
 from pathlib import Path
 
+#define constants
+session = requests.Session()
 
-#Compile regexes needed for multiple functions for greater efficiency
 year_pattern = re.compile(r"/(\d{4})/")
 name_pattern = re.compile(r"/([^/]+)\.[^/]+$")
 php_pattern = re.compile(r"\.php")
+forbidden_chars = re.compile(r'[\\/:*?"<>|\x00]')
 
-session = requests.Session()
 
-
-def DL_php(phpURL, savePath):
+def get_comp_name(competition_page):
     """
-    Download .php file from ianseo web url
+    Get competition name from a given Ianseo page and sanitises it (removes forbidden characters). 
 
     Parameters
     ----------
-    phpURL : str
-        Url to Ianseo webpage for a given competition.
-    
-    savePath : str
-        Filepath to desired location to save .php file.
+    competition_page : str
+        String containing html of an Ianseo webpage
 
     Returns
     -------
-    None
+    competition_name : str
+        Sanitised competition name
     """
-
-    r = session.get(phpURL)
-    with open(savePath, "wb") as f:
-        f.write(r.content)
-    f.close()
-    
-    return 
-
-def get_competition_name(filepath):
-    """
-    Pulls the competition name from a downloaded Ianseo webpage.
-
-    Parameters
-    ----------
-    filepath : str
-        Filepath to the downloaded competition Ianseo webpage.
-
-    Returns
-    -------
-    competition_name : string
-        Name of competition.
-    """
-
-    #Open file and store as document
-    file = open(filepath, "r")
-    document = file.read()
-    file.close()
-
+        
     #Parse document with bs4 to make navigation easier
-    document = BeautifulSoup(document, 'html.parser')
+    soup = BeautifulSoup(competition_page, 'html.parser')
 
     #It's Ianseo so of course the competition name is saved in 2 different ways
-    center = document.select_one(".results-header-center")
+    center = soup.select_one(".results-header-center")
     if center is not None:
         raw_name = center.find("div").get_text(strip=True)
     else:
-        header = document.find("table", id="TourHeader")
+        header = soup.find("table", id="TourHeader")
         th = header.find("th") if header else None
         raw_name = th.get_text(separator="\n", strip=True).split("\n")[0]
 
+    #Sanitise compeition name
     competition_name = raw_name.replace(" ", "_")
+    competition_name = re.sub(forbidden_chars, "_", competition_name)
 
     return competition_name
 
-
-
-
-def find_data_urls(filepath): 
+def find_data_urls(competition_page):
     """
-    Searches for urls to data for a given downloaded Ianseo webpage.
+    Searches for urls to data for a given Ianseo webpage.
 
     Parameters
     ----------
-    file_path : str
-        Filepath to the downloaded competition Ianseo webpage.
+    competition_page : str
+        String containing html of a given Ianseo webpage.
 
     Returns
     -------
-    filtered_links : list
+    full_links : list
         List of urls to data for a given Ianseo webpage.
     """
-    global php_pattern
 
-    #Open file and store as document
-    file = open(filepath, "r")
-    document = file.read()
-    file.close()
-
-    #Parse document with bs4 to make navigation easier
-    document = BeautifulSoup(document, 'html.parser')
-    div = document.find("div",class_="results-panel-head",string="Qualification Round") #Data links are always stored in the "Qualification Round" div
+    soup = BeautifulSoup(competition_page, 'html.parser')
+    div = soup.find("div",class_="results-panel-head",string="Qualification Round") #Data links are always stored in the "Qualification Round" div
     
     #Competitions may have team scores and individual scores. We are only interested in the individual scores.
     results_panel_body = div.find_next("div", class_= "results-panel-body") #Individual scores are always stored in the first "results-panel-body" div
@@ -160,58 +121,23 @@ def find_data_urls(filepath):
     #Filter out broken urls which contain whitespace
     filtered_links = [s for s in filtered_links if not any(c.isspace() for c in s)]
 
-    return filtered_links
+    #Add standard url prefix
+    full_links = [f"https://www.ianseo.net{link}" for link in filtered_links]
+
+    return full_links
 
 
-def DL_data(file_path, competition_name):
-    """
-    Downloads competition data from a downloaded Ianseo webpage and saves as .php files in the "raw_data" directory.
-    Calls find_data_urls() function.
-
-    Parameters
-    ----------
-    file_path : str
-        Filepath to the downloaded competition Ianseo webpage.
-    
-    competition_name : str
-        Name of competition
-
-    Returns
-    -------
-    None
-    """
-
-    global year_pattern #Regex compiled externally for better efficiency
-    global name_pattern #Regex compiled externally for better efficiency
-
-
-    urls = find_data_urls(file_path) #Extract list of data urls from ianseo webpage
-    year = re.search(year_pattern, urls[0]).group(1) #Determine year of competition from the first url
-    
-    #Create a subdirectory in "raw_data" for the year of that competition.
-    directory_name = Path("raw_data") / f"{competition_name}_{year}"
-    os.makedirs(directory_name, exist_ok=True)
-    
-    #Convert urls from list into a valid format, find category of competition from url, and download as a .php file
-    #Filename formatted as "competetionName_year_competitionCateogry.php"
-    for url in urls:
-        url = f"https://www.ianseo.net{url}"
-        name = re.search(name_pattern, url).group(1)
-        save_path = directory_name / f"{name}.php"
-        DL_php(url, save_path)
-    
-    return
-
-
-def Parse_html_to_excel(filepath, competition_name):
+def Parse_html_to_excel(data_page, url, competition_name):
     """
     Parses ianseo competition data into a pandas dataframe, then saves it as an excel sheet in the "excel_data" directory.
-    Only for separately saved data. For combined data frame, look at Parse_big_html_to_excel().
 
     Parameters
     ----------
-    file_path : str
-        Filepath to the downloaded competition data .php file.
+    data_page : str
+        String containing html of a given Ianseo data webpage.
+    
+    url : str
+        Url of Ianseo data webpage
 
     competition_name : str
         Name of competition
@@ -226,19 +152,13 @@ def Parse_html_to_excel(filepath, competition_name):
     global name_pattern #Regex compiled externally for better efficiency
 
     #Identify year and name of competition
-    year = re.search(year_pattern, filepath).group(1)
-    name = re.search(name_pattern, filepath).group(1)
+    year = re.search(year_pattern, url).group(1)
+    name = re.search(name_pattern, url).group(1)
 
-    save_dir = Path("excel_data") / f"{competition_name}_{year}"
-    os.mkdir(save_dir, exist_ok = True)
-    save_path = save_dir / f"{name}.xlsx"
+    save_path = Path("IANSEO scraper v2/excel_data") / f"{name}.xlsx"
 
-    #Open .php data file and store as "document"
-    with open(filepath, "r", encoding="utf-8") as file:
-        document = file.read()
-    
     #Use bs4 to parse html to make navigating the document easier
-    soup = BeautifulSoup(document, "html.parser")
+    soup = BeautifulSoup(data_page, "html.parser")
     div = soup.find("div", id="Accordion")
     if div is None:
         div = soup.find("div", class_ = "container-table100")#Different years encode files slightly differently because why not
@@ -351,108 +271,107 @@ def Parse_html_to_excel(filepath, competition_name):
     return
 
 
-def DL_competition(competition_name, url):
+def compile_excel_sheets(save_directory, competition_name, year):
     """
-    Brings everything together. Creates a multisheet excel workbook of competition data for each url in an excel workbook.
-    Calls DL_php(), DL_data(), and Parse_html_to_excel() functions
+    Compile all excel sheets in a given directory into a single multi-sheet workbook named after the competition and year.
 
     Parameters
     ----------
-    competition_name : str
-        Name of competition. Used to name generated files and folders.
+    save_directory : str
+        Path to desired directory to save compiled data.
     
-    url_filepath : str
-        Filepath to excel sheet containing urls to Ianseo webpages.
+    competition_name : str
+        Name of competition
+    
+    year : str
+        Year of competition
 
     Returns
     -------
     None
     """
 
+    save_directory = Path(save_directory)
+    compiled_data = save_directory / f"{competition_name[:26]}_{year}.xlsx" #Excel file names have a 31 character limit
 
-    #Create directories for "ianseo_pages", "raw_data", "excel_data", and subdirectory "[competition_name]_data" in "results" directory
-    directory_name = "ianseo_pages"
-    os.makedirs(directory_name, exist_ok=True)
+    directory = Path("IANSEO scraper v2/excel_data") #Location of files to compile
 
-    directory_name = "raw_data"
-    os.makedirs(directory_name, exist_ok=True)
+    with pd.ExcelWriter(compiled_data) as writer:
 
-    directory_name = "excel_data"
-    os.makedirs(directory_name, exist_ok=True)
-
-    directory_name = f"results/{competition_name}_data"
-    os.makedirs(directory_name, exist_ok=True)
-
-    #Download each Ianseo page and associated competition data for each url
-    #Names each Ianseo page file using a counter instead of by year because year cannot be determined until the file has been parsed
-
-    page_path = Path("ianseo_pages") / f"{competition_name}.php"
-    DL_php(url, page_path)
-    DL_data(page_path, competition_name)
+        for file in directory.iterdir():
+            sheet = pd.read_excel(file)
+            sheet_name = file.stem
+            sheet.to_excel(writer, sheet_name=sheet_name, index=False)
     
-    #Cleans up any misformatted filepaths
-    for root, dirs, files in os.walk("raw_data"):
-        for file in files:
-            full_path = os.path.join(root, file).replace("\\", "/")
-            Parse_html_to_excel(full_path)
+    return
 
-    parent_dir = "excel_data"
 
-    with os.scandir(parent_dir) as entries:
-        directories = [entry.name for entry in entries if entry.is_dir()]#Lists subdirectories in "excel_data" - should be one per competition year
+def DL_competition(url):
+    """
+    Creates a single multi-sheet excel workbook of all the competition records of a given Ianseo page.
 
-    #Now compiling every excel sheet in each subdirectory into one multisheet excel workbook and saving it in the appropriate subdirectory in the "results" directory
-    for directory in directories:
-        folder_path = os.path.join("excel_data", directory)
-        files = [entry for entry in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, entry))]
+    Stores Ianseo page as a variable in RAM instead of downloading, grabs competion name, year, and data urls. 
+    Parses data from data urls into Excel sheets in "excel_data" directory, then compiles data into "results" directory.
+    Deletes "excel_data" directory after compiling.
 
-        output_file = os.path.join(directory_name, f"{competition_name}_{directory}.xlsx") #Name excel workbook in "competitionName_year.xlsx" format
-        
-        with pd.ExcelWriter(output_file) as writer:
-            for file in files: #Adds each file as a sheet to the excel workbook
-                file_path = os.path.join(folder_path, file)
-                df = pd.read_excel(file_path)
-                
-                sheet_name = file.replace(".xlsx", "").replace(f"{competition_name}_", "")
-                df.to_excel(writer, sheet_name=sheet_name, index=False) 
+    Parameters
+    ----------
+    url : str
+        Url to desired Ianseo page
+
+    Returns
+    -------
+    None
+    """
+
+    #Raise webpage for a given Ianseo url
+    response = session.get(url)
+    response.raise_for_status()
+    competition_page = response.text
+
+    competition_name = get_comp_name(competition_page)
+
+    data_urls = find_data_urls(competition_page)
+
+    #I don't remember why I did this but the script breaks if you don't
+    del response
+    del competition_page
+
+    os.makedirs("IANSEO scraper v2/excel_data", exist_ok=True)
+    os.makedirs("IANSEO scraper v2/results", exist_ok=True)
+
+    if data_urls:
+        for url in data_urls:
+            response = session.get(url)
+            year = re.search(year_pattern, url).group(1)
+            response.raise_for_status()
+            data_page = response.text
+            Parse_html_to_excel(data_page, url, competition_name)
     
-    #Delete temporary files to free up system memory
-    shutil.rmtree("excel_data")
-    shutil.rmtree("ianseo_pages")
-    shutil.rmtree("raw_data") 
+    del data_urls
+
+    if any(Path("IANSEO scraper v2/excel_data").iterdir()):
+        compile_excel_sheets("IANSEO scraper v2/results/", competition_name, year)
+    
+    shutil.rmtree("IANSEO scraper v2/excel_data")
 
     return
 
 
 def main():
-    """
-    Co-ordinates the whole program. Takes "urls" directory of excel sheets containing urls and returns "results" directory containing subdirectories for each input worksheet, each subdirectory containing multisheet excel workbooks for each year of competition.
 
-    Returns
-    -------
-    None
-    """
-    urls_file = pd.read_excel("urls.xlsx")
-    urls = urls_file.iloc[:, 0].tolist()
-    total_comps = len(urls)
+    urls = pd.read_excel("IANSEO scraper v2/urls.xlsx").iloc[:, 0].tolist()
 
-    #Initialise progress tracker
-    print("Working on: ")
-    print(f"0 of {total_comps} competitions complete")
+    for url in urls:
+        DL_competition(url)
 
-    for i, url in enumerate(urls, start= 1):
-        competition_name = get_competition_name(url)
+    return
 
-        sys.stdout.write("\033[2F")
-        sys.stdout.write(f"\rWorking on: {competition_name}\033[K\n")
 
-        DL_competition(competition_name, url)
-
-        sys.stdout.write(f"\r{i} of {total_comps} competitions complete\033[K\n")
-        sys.stdout.flush()
-    
-    print("\nComplete") #Report when program is complete.
-
+def single_url_test():
+    #Use this to see if a given Ianseo page is compatible with the scraper.
+    url = "https://www.ianseo.net/Details.php?toId=25066"
+    DL_competition(url)
 
     return
 
@@ -460,3 +379,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+    #single_url_test()
