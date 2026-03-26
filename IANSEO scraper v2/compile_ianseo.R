@@ -11,8 +11,8 @@ longbow_or_ladies_pattern <- regex("[L]")
 age_pattern <- regex("50|U21|U18|U16|U15|U14|Jun|J|Over")
 junior_pattern <- regex("Junior|Juniors|Junior's")
 is_open_pattern <- regex("HN|IS|ISA|ISS")
-twenty_yards_1_names <- c("20yds", "20y", "20yds-1", "20yds - 1", "20y - 1", ".1.", "20Y-1", "20y-1")
-twenty_yards_2_names <- c("20yds.1", "20y.1", "20yds-2", "20yds - 2", "20y - 2", ".2.", "20Y-2", "20y-2")
+twenty_yards_1_names <- c("20yds", "20y", "20yds-1", "20yds - 1", "20y - 1", ".1.", "20Y-1", "20y-1", "20Yd-1")
+twenty_yards_2_names <- c("20yds.1", "20y.1", "20yds-2", "20yds - 2", "20y - 2", ".2.", "20Y-2", "20y-2", "20Yd-2")
 remove_cols <- c("Country Code", "Country or State Code", "Country", "&nbsp;", "Società", "NOC", "Avg", "Arrows")
 portsmouth_data <- list()
 wa18_data <- list()
@@ -247,6 +247,7 @@ portsmouth_total <- dplyr::bind_rows(
 portsmouth_total <- portsmouth_total %>%
   select(-any_of(c("18m", "18m.1", "18.1", "18.2"))) %>%
   mutate(`10` = coalesce(`10`, Tens)) %>%
+  filter(!Style %in% c("IQA1L", "IQA2L", "IQAFB50M")) %>%
   select(-Tens)
 
 #Bind portsmouth and WA18 dataframes
