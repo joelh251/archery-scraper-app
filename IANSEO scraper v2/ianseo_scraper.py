@@ -292,8 +292,16 @@ def compile_excel_sheets(save_directory, competition_name, year):
     """
 
     save_directory = Path(save_directory)
-    compiled_data = save_directory / f"{competition_name[:26]}_{year}.xlsx" #Excel file names have a 31 character limit
 
+    file_name = f"{competition_name[:26]}_{year}.xlsx" #Excel file names have a 31 character limit
+
+    files = os.listdir(save_directory)
+
+    if file_name in files:
+        file_name = "1" + file_name[1:]
+
+    compiled_data = save_directory / file_name 
+    print(f"{competition_name[:26]}_{year}.xlsx")
     directory = Path("IANSEO scraper v2/excel_data") #Location of files to compile
 
     with pd.ExcelWriter(compiled_data) as writer:
@@ -334,8 +342,8 @@ def DL_competition(url):
     data_urls = find_data_urls(competition_page)
 
     #I don't remember why I did this but the script breaks if you don't
-    del response
-    del competition_page
+    #del response
+    #del competition_page
 
     os.makedirs("IANSEO scraper v2/excel_data", exist_ok=True)
     os.makedirs("IANSEO scraper v2/results", exist_ok=True)
@@ -360,7 +368,7 @@ def DL_competition(url):
 
 def main():
 
-    urls = pd.read_excel("IANSEO scraper v2/urls.xlsx").iloc[:, 0].tolist()
+    urls = pd.read_excel("IANSEO scraper v2/urls.xlsx", header=None).iloc[:, 0].tolist()
 
     for url in urls:
         DL_competition(url)
@@ -370,7 +378,7 @@ def main():
 
 def single_url_test():
     #Use this to see if a given Ianseo page is compatible with the scraper.
-    url = "https://www.ianseo.net/Details.php?toId=25066"
+    url = "https://www.ianseo.net/Details.php?toId=15718"
     DL_competition(url)
 
     return
