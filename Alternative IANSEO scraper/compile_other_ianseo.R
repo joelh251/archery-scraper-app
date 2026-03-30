@@ -11,13 +11,13 @@ longbow_or_ladies_pattern <- regex("[L]")
 age_pattern <- regex("50|U21|U18|U16|U15|U14|Jun|J|Over")
 junior_pattern <- regex("Junior|Juniors|Junior's")
 is_open_pattern <- regex("HN|IS|ISA|ISS")
-twenty_yards_1_names <- c("20yds", "20y", "20yds-1", "20yds - 1", "20y - 1", ".1.", "20Y-1", "20y-1", "20Yd-1", "20y / 1", "20y/1")
-twenty_yards_2_names <- c("20yds.1", "20y.1", "20yds-2", "20yds - 2", "20y - 2", ".2.", "20Y-2", "20y-2", "20Yd-2", "20y / 2", "20y/2")
+twenty_yards_1_names <- c("20yds", "20y", "20yds-1", "20yds - 1", "20y - 1", ".1.", "20Y-1", "20y-1", "20Yd-1")
+twenty_yards_2_names <- c("20yds.1", "20y.1", "20yds-2", "20yds - 2", "20y - 2", ".2.", "20Y-2", "20y-2", "20Yd-2")
 remove_cols <- c("Country Code", "Country or State Code", "Country", "&nbsp;", "Società", "NOC", "Avg", "Arrows")
 portsmouth_data <- list()
 wa18_data <- list()
 
-data_dir <- "IANSEO scraper v2/results"
+data_dir <- "Alternative IANSEO scraper/results"
 filepaths <- list.files(data_dir)
 
 get_suffix <- function(filename)
@@ -169,7 +169,7 @@ calculate_golds <- function(row)
 {
   if (row[["Golds"]] %in% c(NA, ""))
   {
-    row[["Golds"]] <- sum(as.numeric(row[["10"]]), as.numeric(row[["9"]]))
+    row[["Golds"]] <- sum(as.numeric(row[["X10"]]), as.numeric(row[["X9"]]))
   }
   return(row)
 }
@@ -245,14 +245,10 @@ portsmouth_total <- dplyr::bind_rows(
 )
 
 portsmouth_total <- portsmouth_total %>%
-  select(-any_of(c("18m", "18m.1", "18.1", "18.2", "18M - 1", "18M - 2", "5", "X"))) %>%
-  mutate(`10` = coalesce(`10`, Tens, `10s`, `10's`)) %>%
-  filter(!Style %in% c("IQA1L", "IQA2L", "IQAFB50M", "IQJL")) %>%
-  select(-any_of(c("Tens", "10s", "10's")))
-
-WA18_total <- WA18_total %>%
-  mutate(`10` = coalesce(`10`, `10+X`)) %>%
-  select(-`10+X`)
+  select(-any_of(c("18m", "18m.1", "18.1", "18.2", "X"))) %>%
+  mutate(Golds = coalesce(Gold, Golds)) %>%
+  filter(!Style %in% c("IQA1L", "IQA2L", "IQAFB50M")) %>%
+  select(-Gold)
 
 #Bind portsmouth and WA18 dataframes
 colnames(WA18_total)[c(7, 9)] <- c("Round1", "Round2")
@@ -265,4 +261,4 @@ indoors_total <- dplyr::bind_rows(
 )
 
 
-write.csv(indoors_total, "IANSEO scraper v2/ianseo_results.csv", row.names = FALSE)
+write.csv(indoors_total, "Alternative IANSEO scraper/extra_ianseo_results.csv", row.names = FALSE)
