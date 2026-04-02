@@ -35,4 +35,14 @@ total_data <- bind_rows(
 
 total_data <- total_data %>% distinct()
 
-write.csv(total_data, "total_data.csv")
+total_data <- subset(total_data, !Round1 %in% c("U12", "U14", "U15", "U16", "U18", "U21", "50+"))
+
+total_data <- total_data %>%
+    mutate(Style = recode(Style,
+        "C" = "Compound",
+        "B" = "Barebow",
+        "L" = "Longbow",
+        "R" = "Recurve"
+    ))
+
+write.csv(total_data, "total_data.csv", row.names = FALSE)
