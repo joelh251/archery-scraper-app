@@ -46,9 +46,7 @@ total_data <- total_data %>%
     )) %>%
  mutate(Age = recode(Age,
         "Over" = "50+",
-        "50" = "50+",
-        "L" = "Longbow",
-        "R" = "Recurve"
+        "50" = "50+"
     )) 
 
 write.csv(total_data, "total_data.csv", row.names = FALSE)
