@@ -339,27 +339,28 @@ def get_comp_name(url: str) -> str:
 
     return re.sub(FORBIDDEN_FILE_CHARS, "_", raw_name.replace(" ", "_"))
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    save_directory = Path("Alternative IANSEO scraper/results")
-    save_directory.mkdir(parents=True, exist_ok=True)
+class AltIanseoScraper():
+    def __init__(self, urls):
+        self.urls = urls
 
-    urls = pd.read_excel("Alternative IANSEO scraper/non-ideal_urls.xlsx", header=None).iloc[:, 0].tolist()
+    def scrape_alt_ianseo(self):
+        save_directory = Path("temp/alt_ianseo")
+        save_directory.mkdir(parents=True, exist_ok=True)
+        self.progress = 0
+        self.totalUrls = len(self.urls)
 
-    for url in urls:
-        comp_link = get_ic_link(url)
-        if not comp_link:
-            print(f"No IC.php link found for {url}, skipping.")
-            continue
+        for url in self.urls:
+            comp_link = get_ic_link(url)
+            if not comp_link:
+                continue
 
-        comp_name = get_comp_name(url)
-        year = re.search(YEAR_PATTERN, comp_link).group(1)
-        file_name = f"{comp_name[:26]}_{year}.xlsx"
+            comp_name = get_comp_name(url)
+            year = re.search(YEAR_PATTERN, comp_link).group(1)
+            file_name = f"{comp_name[:26]}_{year}.xlsx"
 
-        if file_name in os.listdir(save_directory):
-            file_name = "1" + file_name[1:]
+            if file_name in os.listdir(save_directory):
+                file_name = "1" + file_name[1:]
 
-        tables_to_excel(comp_link, save_directory / file_name, comp_name, year)
+            tables_to_excel(comp_link, save_directory / file_name, comp_name, year)
+            self.progress += 1

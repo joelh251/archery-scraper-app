@@ -46,7 +46,6 @@ import requests
 import os
 import pandas as pd
 import shutil
-import sys
 from pathlib import Path
 
 #define constants
@@ -366,29 +365,15 @@ def DL_competition(url):
     return
 
 
-def main():
+class IanseoScraper():
+    def __init__(self, urls):
+        self.urls = urls
 
-    urls = pd.read_excel("IANSEO scraper v2/urls.xlsx", header=None).iloc[:, 0].tolist()
+    def scrape_ianseo(self):
+        self.progress = 0
+        self.totalUrls = len(self.urls)
+        for url in self.urls:
+            DL_competition(url)
+            self.progress += 1
 
-    for url in urls:
-        DL_competition(url)
-
-    return
-
-
-def single_url_test():
-    #Use this to see if a given Ianseo page is compatible with the scraper.
-    url = "https://www.ianseo.net/Details.php?toId=15718"
-    DL_competition(url)
-
-    return
-
-
-if __name__ == "__main__":
-
-    main()
-<<<<<<< HEAD
-    #single_url_test()
-=======
-    #single_url_test()
->>>>>>> 89250db6e0c3ef3b3eb184f79950c1d1c21dda73
+        

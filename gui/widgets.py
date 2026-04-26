@@ -1,5 +1,4 @@
-from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QApplication, QPlainTextEdit, QPushButton, QFileDialog, QWidget, QHBoxLayout, QLineEdit
+from PyQt6.QtWidgets import QPlainTextEdit, QPushButton, QFileDialog, QWidget, QHBoxLayout, QLineEdit, QProgressBar, QLabel
 
 class fileBrowser(QWidget):
     def __init__(self, parent=None):
@@ -66,6 +65,27 @@ class linkInputBox(QWidget):
         self.textbox.setPlaceholderText("Enter urls separated by line breaks...")
 
         layout.addWidget(self.textbox)
+
+class progressBar(QWidget):
+    def __init__(self, text, max_value, parent=None):
+        super(progressBar, self).__init__(parent)
+
+        layout = QHBoxLayout()
+        self.setLayout(layout)
+
+        self.label = QLabel(text)
+        self.label.setWordWrap(True)
+        layout.addWidget(self.label)
+
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(max_value)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
+
+
+    def set_progress(self, value):
+        self.progress_bar.setValue(value)
 
 
             
