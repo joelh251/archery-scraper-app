@@ -268,7 +268,7 @@ def tables_to_excel(url: str, output_file: str, comp_name: str, year: str) -> No
                 all_sections.extend(s for s in sections if s["rows"])
 
     if not all_sections:
-        print("No result sections found on the page.")
+        #print("No result sections found on the page.")
         return
 
     workbook = openpyxl.Workbook()
@@ -293,11 +293,11 @@ def tables_to_excel(url: str, output_file: str, comp_name: str, year: str) -> No
         write_section_to_sheet(ws, section, comp_name, year)
 
     if not workbook.sheetnames:
-        print("No sheets to save after filtering.")
+        #print("No sheets to save after filtering.")
         return
 
     workbook.save(output_file)
-    print(f"Saved {len(workbook.sheetnames)} sheet(s) to '{output_file}'.")
+    #print(f"Saved {len(workbook.sheetnames)} sheet(s) to '{output_file}'.")
 
 # ---------------------------------------------------------------------------
 # Page scraping helpers

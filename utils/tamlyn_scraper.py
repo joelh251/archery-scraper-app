@@ -21,8 +21,8 @@ import requests
 import os
 import pandas as pd
 from io import StringIO
-import sys
 from pathlib import Path
+from PyQt6.QtCore import QThread, pyqtSignal
 
 #constants
 BASE_URL = "https://www.tamlynscore.co.uk"
@@ -89,9 +89,12 @@ def DL_csv(csvURL, savePath, compName, year):
 
 
 
-class TamlynScraper():
+class TamlynScraper(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, parent=None):
+        super(TamlynScraper, self).__init__(parent)
         os.makedirs(RESULTS_DIR, exist_ok=True)
 
         #Grab the webpage listing all the competition names
@@ -108,12 +111,13 @@ class TamlynScraper():
         self.all_years = div.find_all("div", class_ = "year-accordion")
         self.all_comps = div.find_all("ul", class_ = "link-list")
 
-        self.progress = 0
-
-
-    def scrape_tamlyn(self):
+    def run(self):
+        
+        i = 0
+        self.progress.emit(i)
 
         for comp, years in zip(self.all_comps, self.all_years):
+
             counter = 1
             year = years.find("h4", class_ = "year-accordion__header").get_text(strip = True)
             hrefs = comp.find_all("a", href = True)
@@ -126,4 +130,9 @@ class TamlynScraper():
                 savePath = RESULTS_DIR / f"{year}_{counter}.csv" 
                 if DL_csv(csvLink, savePath, name, year):
                     counter +=1
-                self.progress += 1
+                i += 1
+                self.progress.emit(i)
+        
+        self.finished.emit()
+
+

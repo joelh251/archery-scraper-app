@@ -1,9 +1,10 @@
+#!/usr/bin/env Rscript
 library(readxl)
 library(openxlsx)
 library(dplyr)
 library(tidyr)
 
-directory <- "Alternative IANSEO scraper/results"
+directory <- "temp/alt_ianseo"
 
 files <- list.files(directory, full.names = TRUE)
 
@@ -76,11 +77,11 @@ correct_colnames <- function(file_path)
                 separate(`20y-1`, into = c("20y-1", "X.1"), sep = "/", convert = TRUE) %>%
                 separate(`20y-2`, into = c("20y-2", "X.2"), sep = "/", convert = TRUE)
         }
-        
+
         cols_to_remove <- c("Remove", "Remove2")
         df <- df %>%
             select(-any_of(cols_to_remove))
-        
+
         writeData(wb, sheet, df, startRow = 1, startCol = 1)
     }
 

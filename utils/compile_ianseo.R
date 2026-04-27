@@ -1,4 +1,4 @@
-library(tidyverse)
+#!/usr/bin/env Rscript
 library(readxl)
 library(stringr)
 library(purrr)
@@ -17,7 +17,7 @@ remove_cols <- c("Country Code", "Country or State Code", "Country", "&nbsp;", "
 portsmouth_data <- list()
 wa18_data <- list()
 
-data_dir <- "IANSEO scraper v2/results"
+data_dir <- "temp/ianseo"
 filepaths <- list.files(data_dir)
 
 get_suffix <- function(filename)
@@ -30,26 +30,26 @@ do_the_categories <- function(row)
 {
   #Throughout this function, we always coalesce instead of just grabbing a pattern match
   #This is because str_extract() returns NA if not matched instead of quietly failing
-  
+
   #Get suffix of sheet name - this is where the category data is stored (e.g. IQCRW)
   suffix <- get_suffix(row[["Sheet"]])
-  
+
   #Search for comps known to be mixed sex (mostly military competitions)
   if (str_detect(suffix, is_open_pattern) == TRUE)
   {
     row[["Sex"]] <- "O"
     suffix <- str_remove(suffix, is_open_pattern)
   }
-  
+
   #Get age, the simplest logic
   row[["Age"]] <- coalesce(str_extract(suffix, age_pattern), row[["Age"]])
   suffix <- str_remove(suffix, age_pattern)
-  
+
   #Search for styles except for longbow
   #Longbow and Ladies can both be encoded as L, very helpful
   row[["Style"]] <- coalesce(str_extract(suffix, style_pattern), row[["Style"]])
   suffix <- str_remove(suffix, style_pattern)
-  
+
   #If other style categories not picked up, then have to logic out what L means
   if (row[["Style"]] == "")
   {
@@ -66,7 +66,7 @@ do_the_categories <- function(row)
       #Check if sex has been recorded in the other normal patterns
       row[["Sex"]] <- coalesce(str_extract(suffix, sex_pattern), row[["Sex"]])
       suffix <- str_remove(suffix, sex_pattern)
-      
+
       #Sex is not encoded otherwise and L only appears once, need manual review
       if (row[["Sex"]] == "" & !get_suffix(row[["Sheet"]]) %in% c("IQL", "IQOverL"))
       {
@@ -80,44 +80,44 @@ do_the_categories <- function(row)
       }
     }
   }
-  
+
   #If style was captured otherwise and L is still present, must mean ladies so need to capture
   if (row[["Style"]] != "")
   {
     row[["Sex"]] <- coalesce(str_extract(suffix, longbow_or_ladies_pattern), row[["Sex"]])
     suffix <- str_remove(suffix, longbow_or_ladies_pattern)
   }
-  
+
   #Can now check for sex normally
   row[["Sex"]] <- coalesce(str_extract(suffix, sex_pattern), row[["Sex"]])
   suffix <- str_remove(suffix, sex_pattern)
-  
+
   if (str_detect(suffix, nonbinary_pattern) == TRUE)
   {
     row[["Sex"]] <- "NB"
     suffix <- str_remove(suffix, nonbinary_pattern)
   }
-  
+
   #For explicitly junior comps, sometimes they don't bother encoded junior in the file name
   #Checks if junior is recorded in the competition name instead
   if (row[["Age"]] == "")
   {
     row[["Age"]] <- coalesce(str_extract(row[["Competition"]], junior_pattern), row[["Age"]])
   }
-  
+
   #Normalise male categories (because AGB changed male to open in 2025/26)
   suffix <- get_suffix(row[["Sheet"]])
   if (str_detect(suffix, is_open_pattern) == FALSE & row[["Year"]] >= 2025 & row[["Sex"]] == "O")
   {
     row[["Sex"]] <- "M"
   }
-  
+
   #Handle missing sex data
   if (row[["Sex"]] == "")
   {
     row[["Sex"]] <- "O"
   }
-  
+
   #Normalise sex category names
   if (row[["Sex"]] %in% c("F", "L"))
   {
@@ -127,7 +127,7 @@ do_the_categories <- function(row)
   {
     row[["Sex"]] <- "M"
   }
-  
+
   #Normalise junior category names
   if (row[["Age"]] %in% c("Jun", "J", "Junior"))
   {
@@ -191,7 +191,7 @@ wa18_data[[filepaths[j]]] <- list()
       sheet$Age <- ""
       sheet$Style <- ""
       sheet[] <- lapply(sheet, as.character)
-      
+
       colnames(sheet)[colnames(sheet) %in% twenty_yards_1_names] <- "20y-1"
       colnames(sheet)[colnames(sheet) %in% twenty_yards_2_names] <- "20y-2"
       if ("Rank" %in% colnames(sheet)) {
@@ -214,7 +214,7 @@ wa18_data[[filepaths[j]]] <- list()
       {
       sheet$Pos. <- "None"
       }
-      
+
       if ("18m-1" %in% colnames(sheet))
       {
       wa18_data[[filepaths[j]]][[data_sheets[k]]] <- sheet
@@ -223,7 +223,7 @@ wa18_data[[filepaths[j]]] <- list()
       {
       portsmouth_data[[filepaths[j]]][[data_sheets[k]]] <- sheet
       }
-      
+
   }
 }
 
@@ -265,4 +265,5 @@ indoors_total <- dplyr::bind_rows(
 )
 
 
-write.csv(indoors_total, "IANSEO scraper v2/ianseo_results.csv", row.names = FALSE)
+write.csv(indoors_total, "temp/ianseo_results.csv", row.names = FALSE)
+delete_dir(data_dir)

@@ -4,6 +4,7 @@ from gui.widgets import *
 from utils.ianseo_scraper import IanseoScraper
 from utils.alt_ianseo_scraper import AltIanseoScraper
 from utils.tamlyn_scraper import TamlynScraper
+from utils.compilers import *
 
 
 class IntroPage(QWizardPage):
@@ -194,12 +195,18 @@ class ProgressPage(QWizardPage):
             self.ianseo_progress_bar = progressBar("Ianseo Scraper Progress", len(self.ianseo_urls))
             self._layout.addWidget(self.ianseo_progress_bar)
 
+            self.ianseo_scraper.progress.connect(self.ianseo_progress_bar.set_progress)
+            self.ianseo_scraper.finished.connect(self.compile_ianseo)
+            
+            self.ianseo_scraper.start()
+
         if self.alt_ianseo_urls:
             self.alt_ianseo_scraper = AltIanseoScraper(self.alt_ianseo_urls)
             self.alt_ianseo_progress_bar = progressBar("Alternative Ianseo Scraper Progress", len(self.alt_ianseo_urls))
             self._layout.addWidget(self.alt_ianseo_progress_bar)
 
             self.alt_ianseo_scraper.progress.connect(self.alt_ianseo_progress_bar.set_progress)
+            self.alt_ianseo_scraper.finished.connect(self.compile_alt_ianseo)
             
             self.alt_ianseo_scraper.start()
 
@@ -208,5 +215,22 @@ class ProgressPage(QWizardPage):
             self.tamlyn_progress_bar = progressBar("TamlynScore Scraper Progress", self.tamlyn_scraper.totalUrls)
             self._layout.addWidget(self.tamlyn_progress_bar)
 
+            self.tamlyn_scraper.progress.connect(self.tamlyn_progress_bar.set_progress)
+            self.tamlyn_scraper.finished.connect(self.compile_tamlyn)
+
+            self.tamlyn_scraper.start()
+
         if not self.ianseo_urls and not self.alt_ianseo_urls and not self.scrape_tamlyn:
             QMessageBox.warning(self, "Bored", "There's nothing to do.")
+    
+    def compile_ianseo(self):
+        # TODO add connections so ultimate compiler waits for lesser compilers to finish
+        self.ianseo_compiler = basicCompilerWorker("utils/compile_ianseo.R")
+
+    def compile_alt_ianseo(self):
+        # TODO make compiler wait until cleaner has run
+        self.alt_ianseo_cleaner = basicCompilerWorker("utils/alt_ianseo_cleaner.R")
+        self.alt_ianseo_compiler = basicCompilerWorker("utils/compile_alt_ianseo.R")
+
+    def compile_tamlyn(self):
+        self.tamlyn_compiler = basicCompilerWorker("utils/compile_tamlyn.R")

@@ -47,6 +47,7 @@ import os
 import pandas as pd
 import shutil
 from pathlib import Path
+from PyQt6.QtCore import QThread, pyqtSignal
 
 #define constants
 session = requests.Session()
@@ -154,7 +155,7 @@ def Parse_html_to_excel(data_page, url, competition_name):
     year = re.search(year_pattern, url).group(1)
     name = re.search(name_pattern, url).group(1)
 
-    save_path = Path("IANSEO scraper v2/excel_data") / f"{name}.xlsx"
+    save_path = Path("temp/ianseo/excel_data") / f"{name}.xlsx"
 
     #Use bs4 to parse html to make navigating the document easier
     soup = BeautifulSoup(data_page, "html.parser")
@@ -300,8 +301,8 @@ def compile_excel_sheets(save_directory, competition_name, year):
         file_name = "1" + file_name[1:]
 
     compiled_data = save_directory / file_name 
-    print(f"{competition_name[:26]}_{year}.xlsx")
-    directory = Path("IANSEO scraper v2/excel_data") #Location of files to compile
+    #print(f"{competition_name[:26]}_{year}.xlsx")
+    directory = Path("temp/ianseo/excel_data") #Location of files to compile
 
     with pd.ExcelWriter(compiled_data) as writer:
 
@@ -340,12 +341,7 @@ def DL_competition(url):
 
     data_urls = find_data_urls(competition_page)
 
-    #I don't remember why I did this but the script breaks if you don't
-    #del response
-    #del competition_page
-
-    os.makedirs("IANSEO scraper v2/excel_data", exist_ok=True)
-    os.makedirs("IANSEO scraper v2/results", exist_ok=True)
+    os.makedirs("temp/ianseo/excel_data", exist_ok=True)
 
     if data_urls:
         for url in data_urls:
@@ -357,23 +353,29 @@ def DL_competition(url):
     
     del data_urls
 
-    if any(Path("IANSEO scraper v2/excel_data").iterdir()):
-        compile_excel_sheets("IANSEO scraper v2/results/", competition_name, year)
+    if any(Path("temp/ianseo/excel_data").iterdir()):
+        compile_excel_sheets("temp/ianseo/", competition_name, year)
     
-    shutil.rmtree("IANSEO scraper v2/excel_data")
+    shutil.rmtree("temp/ianseo/excel_data")
 
     return
 
 
-class IanseoScraper():
-    def __init__(self, urls):
+class IanseoScraper(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal(int)
+
+    def __init__(self, urls, parent=None):
+        super(IanseoScraper, self).__init__(parent)
         self.urls = urls
 
-    def scrape_ianseo(self):
-        self.progress = 0
+    def run(self):
+        i = 0
+        self.progress.emit(i)
         self.totalUrls = len(self.urls)
         for url in self.urls:
             DL_competition(url)
-            self.progress += 1
+            i += 1
+            self.progress.emit(i)
 
         
