@@ -6,6 +6,7 @@ import openpyxl
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from PyQt6.QtCore import QThread, pyqtSignal
 
 
 # ---------------------------------------------------------------------------
@@ -340,14 +341,19 @@ def get_comp_name(url: str) -> str:
     return re.sub(FORBIDDEN_FILE_CHARS, "_", raw_name.replace(" ", "_"))
 
 
-class AltIanseoScraper():
-    def __init__(self, urls):
+class AltIanseoScraper(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
+
+    def __init__(self, urls, parent=None):
+        super(AltIanseoScraper, self).__init__(parent)
         self.urls = urls
 
-    def scrape_alt_ianseo(self):
+    def run(self):
         save_directory = Path("temp/alt_ianseo")
         save_directory.mkdir(parents=True, exist_ok=True)
-        self.progress = 0
+        i = 0
+        self.progress.emit(i)
         self.totalUrls = len(self.urls)
 
         for url in self.urls:
@@ -363,4 +369,8 @@ class AltIanseoScraper():
                 file_name = "1" + file_name[1:]
 
             tables_to_excel(comp_link, save_directory / file_name, comp_name, year)
-            self.progress += 1
+
+            i += 1
+            self.progress.emit(i)
+
+        self.finished.emit()

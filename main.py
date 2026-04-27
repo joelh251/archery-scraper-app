@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QApplication, QWizard, QMessageBox
 from gui.wizard_pages import *
+import shutil
 
 class Wizard(QWizard):
     def __init__(self, parent=None):
@@ -27,7 +28,7 @@ class Wizard(QWizard):
                                             QMessageBox.StandardButton.No)
 
         if confirmation == QMessageBox.StandardButton.Yes:
-            # TODO: empty temporary files
+            shutil.rmtree("temp", ignore_errors=True)
             event.accept() 
         else:
             event.ignore()

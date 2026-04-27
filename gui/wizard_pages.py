@@ -55,9 +55,9 @@ class IANSEOScraperPage(QWizardPage):
         
         elif self.filepath and not self.links:
             if self.filepath.endswith(".xlsx"):
-                self.wizard().shared["ianseo_urls"] = pd.read_excel(self.file, header=None).iloc[:, 0].tolist()
+                self.wizard().shared["ianseo_urls"] = pd.read_excel(self.filepath, header=None).iloc[:, 0].tolist()
             elif self.filepath.endswith(".csv"):
-                self.wizard().shared["ianseo_urls"] = pd.read_csv(self.file, header=None).iloc[:, 0].tolist()
+                self.wizard().shared["ianseo_urls"] = pd.read_csv(self.filepath, header=None).iloc[:, 0].tolist()
             else:
                 QMessageBox.warning(self, "Invalid Filepath", "File extension must be .csv or .xlsx")
             return True
@@ -103,9 +103,9 @@ class altIANSEOScraperPage(QWizardPage):
         
         elif self.filepath and not self.links:
             if self.filepath.endswith(".xlsx"):
-                self.wizard().shared["alt_ianseo_urls"] = pd.read_excel(self.file, header=None).iloc[:, 0].tolist()
+                self.wizard().shared["alt_ianseo_urls"] = pd.read_excel(self.filepath, header=None).iloc[:, 0].tolist()
             elif self.filepath.endswith(".csv"):
-                self.wizard().shared["alt_ianseo_urls"] = pd.read_csv(self.file, header=None).iloc[:, 0].tolist()
+                self.wizard().shared["alt_ianseo_urls"] = pd.read_csv(self.filepath, header=None).iloc[:, 0].tolist()
             else:
                 QMessageBox.warning(self, "Invalid Filepath", "File extension must be .csv or .xlsx")
             return True
@@ -190,20 +190,23 @@ class ProgressPage(QWizardPage):
         self.scrape_tamlyn = self.wizard().shared["scrape_tamlyn"]
 
         if self.ianseo_urls:
+            self.ianseo_scraper = IanseoScraper(self.ianseo_urls)
             self.ianseo_progress_bar = progressBar("Ianseo Scraper Progress", len(self.ianseo_urls))
             self._layout.addWidget(self.ianseo_progress_bar)
-            print("ianseo")
 
         if self.alt_ianseo_urls:
+            self.alt_ianseo_scraper = AltIanseoScraper(self.alt_ianseo_urls)
             self.alt_ianseo_progress_bar = progressBar("Alternative Ianseo Scraper Progress", len(self.alt_ianseo_urls))
             self._layout.addWidget(self.alt_ianseo_progress_bar)
-            print("alt ianseo")
+
+            self.alt_ianseo_scraper.progress.connect(self.alt_ianseo_progress_bar.set_progress)
+            
+            self.alt_ianseo_scraper.start()
 
         if self.scrape_tamlyn:
             self.tamlyn_scraper = TamlynScraper()
             self.tamlyn_progress_bar = progressBar("TamlynScore Scraper Progress", self.tamlyn_scraper.totalUrls)
             self._layout.addWidget(self.tamlyn_progress_bar)
-            print("tamlyn")
 
         if not self.ianseo_urls and not self.alt_ianseo_urls and not self.scrape_tamlyn:
-            print("nothing")
+            QMessageBox.warning(self, "Bored", "There's nothing to do.")
