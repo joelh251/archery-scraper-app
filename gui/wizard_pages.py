@@ -149,7 +149,7 @@ class compilerDirectoryPage(QWizardPage):
         super(compilerDirectoryPage, self).__init__(parent)
         # Set page text
         self.setTitle("Choose where to save results")
-        label = QLabel("Here, we'll learn how to use the archery scraper")
+        label = QLabel("Note - TamlynScore will take much longer to scrape than IANSEO.")
         label.setWordWrap(True)
 
         # Set up layout

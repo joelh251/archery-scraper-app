@@ -29,7 +29,7 @@ files <- list.files(data_dir)
 
 import_data <- function(file)
 {
-  df <- read.csv(paste0(data_dir, file), header = TRUE)
+  df <- read.csv(file.path(data_dir, file), header = TRUE)
   df[] <- lapply(df, as.character)
 
   #Some Tamlyn files have different numbers of columns, this handles that
@@ -113,4 +113,4 @@ data <- data %>%
 
 #save final dataframe
 write.csv(data, "temp/tamlyn_results.csv", row.names = FALSE)
-delete_dir(data_dir)
+unlink(data_dir, recursive=TRUE)

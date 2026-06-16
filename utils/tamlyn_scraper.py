@@ -23,6 +23,8 @@ import pandas as pd
 from io import StringIO
 from pathlib import Path
 from PyQt6.QtCore import QThread, pyqtSignal
+from requests.exceptions import ConnectionError, HTTPError
+import time
 
 #constants
 BASE_URL = "https://www.tamlynscore.co.uk"
@@ -31,6 +33,36 @@ RESULTS_DIR = Path("temp/tamlyn")
 ROUND_TYPES = {"Portsmouth", "WA 18m"}
 
 session = requests.Session()
+
+def safe_get(url, retries=3, backoff=5, timeout=(10, 30)):
+    """
+    Attempt a GET request with retries and exponential backoff.
+
+    Parameters
+    ----------
+    url : str
+        URL to request.
+    retries : int
+        Number of retry attempts.
+    backoff : int
+        Base delay in seconds between retries (doubles each attempt).
+
+    Returns
+    -------
+    requests.Response
+    """
+    for attempt in range(retries):
+        try:
+            response = session.get(url, timeout=timeout)
+            response.raise_for_status()
+            return response
+        except (ConnectionError, HTTPError) as e:
+            if attempt < retries - 1:
+                wait = backoff * (2 ** attempt)  # Exponential backoff
+                print(f"[Retry {attempt + 1}/{retries}] Error: {e}. Waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                raise  # Re-raise on final attempt
 
 
 def DL_csv(csvURL, savePath, compName, year):
@@ -58,7 +90,7 @@ def DL_csv(csvURL, savePath, compName, year):
 
     #Pull .csv from Tamlyn Score
     try:
-        r = session.get(csvURL)
+        r = safe_get(csvURL)
         r.raise_for_status() 
     except requests.exceptions.HTTPError:
         return False
@@ -98,7 +130,7 @@ class TamlynScraper(QThread):
         os.makedirs(RESULTS_DIR, exist_ok=True)
 
         #Grab the webpage listing all the competition names
-        r = session.get(TOURNAMENTS)
+        r = safe_get(TOURNAMENTS)
         page = r.content
 
         #Parse page using bs4

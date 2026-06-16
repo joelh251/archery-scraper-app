@@ -48,6 +48,8 @@ import pandas as pd
 import shutil
 from pathlib import Path
 from PyQt6.QtCore import QThread, pyqtSignal
+from requests.exceptions import ConnectionError, HTTPError
+import time
 
 #define constants
 session = requests.Session()
@@ -56,6 +58,36 @@ year_pattern = re.compile(r"/(\d{4})/")
 name_pattern = re.compile(r"/([^/]+)\.[^/]+$")
 php_pattern = re.compile(r"\.php")
 forbidden_chars = re.compile(r'[\\/:*?"<>|\x00]')
+
+def safe_get(url, retries=3, backoff=5):
+    """
+    Attempt a GET request with retries and exponential backoff.
+
+    Parameters
+    ----------
+    url : str
+        URL to request.
+    retries : int
+        Number of retry attempts.
+    backoff : int
+        Base delay in seconds between retries (doubles each attempt).
+
+    Returns
+    -------
+    requests.Response
+    """
+    for attempt in range(retries):
+        try:
+            response = session.get(url, timeout=15)
+            response.raise_for_status()
+            return response
+        except (ConnectionError, HTTPError) as e:
+            if attempt < retries - 1:
+                wait = backoff * (2 ** attempt)  # Exponential backoff
+                print(f"[Retry {attempt + 1}/{retries}] Error: {e}. Waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                raise  # Re-raise on final attempt
 
 
 def get_comp_name(competition_page):
@@ -333,7 +365,7 @@ def DL_competition(url):
     """
 
     #Raise webpage for a given Ianseo url
-    response = session.get(url)
+    response = safe_get(url)
     response.raise_for_status()
     competition_page = response.text
 
@@ -345,7 +377,7 @@ def DL_competition(url):
 
     if data_urls:
         for url in data_urls:
-            response = session.get(url)
+            response = safe_get(url)
             year = re.search(year_pattern, url).group(1)
             response.raise_for_status()
             data_page = response.text

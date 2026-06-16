@@ -262,4 +262,4 @@ indoors_total <- dplyr::bind_rows(
 
 
 write.csv(indoors_total, "temp/alt_ianseo_results.csv", row.names = FALSE)
-dir_delete(data_dir)
+unlink(data_dir, recursive=TRUE)

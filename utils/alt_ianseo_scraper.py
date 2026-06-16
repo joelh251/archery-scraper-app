@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from PyQt6.QtCore import QThread, pyqtSignal
 
 
+
 # ---------------------------------------------------------------------------
 # Regex patterns
 # ---------------------------------------------------------------------------
