@@ -1,4 +1,7 @@
 from PyQt6.QtWidgets import QPlainTextEdit, QPushButton, QFileDialog, QWidget, QHBoxLayout, QLineEdit, QProgressBar, QLabel
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPainter, QColor
+import math
 
 class fileBrowser(QWidget):
     def __init__(self, parent=None):
@@ -27,6 +30,7 @@ class fileBrowser(QWidget):
             selected_files = file_dialog.selectedFiles()
             self.textbox.setText(selected_files[0])
 
+
 class directoryBrowser(QWidget):
     def __init__(self, parent=None):
         super(directoryBrowser, self).__init__(parent)
@@ -53,6 +57,7 @@ class directoryBrowser(QWidget):
         if file_dialog.exec():
             selected_files = file_dialog.selectedFiles()
             self.textbox.setText(selected_files[0])
+
 
 class linkInputBox(QWidget):
     def __init__(self, parent=None):
@@ -88,4 +93,51 @@ class progressBar(QWidget):
         self.progress_bar.setValue(value)
 
 
+class SpinnerWidget(QWidget):
+    def __init__(self, parent=None, size=30, num_dots=10, colour=QColor(0, 0, 0)):
+        super(SpinnerWidget, self).__init__(parent)
+        self.num_dots = num_dots
+        self.colour = colour
+        self.angle = 0
+
+        self.setFixedSize(size, size)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.rotate)
+
+    def rotate(self):
+        self.angle = (self.angle + 360 // self.num_dots) % 360
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        size = min(self.width(), self.height())
+        centre = size / 2
+        dot_radius = size / 10
+        orbit_radius = size / 2 - dot_radius * 1.5
+
+        for i in range(self.num_dots):
+            angle = math.radians(self.angle + i * (360 / self.num_dots))
+
+            x = centre + orbit_radius * math.cos(angle) - dot_radius
+            y = centre + orbit_radius * math.sin(angle) - dot_radius
+
+            opacity = (i + 1) / self.num_dots
+            colour = QColor(self.colour)
+            colour.setAlphaF(opacity)
+            painter.setBrush(colour)
+            painter.setPen(Qt.PenStyle.NoPen)
+
+            painter.drawEllipse(int(x), int(y),
+                                int(dot_radius * 2), int(dot_radius * 2))
+
+    def start(self):
+        self.timer.start(80)
+        self.show()
+
+    def stop(self):
+        self.timer.stop()
+        self.hide()
             

@@ -164,17 +164,6 @@ do_the_categories <- function(row)
 }
 
 
-#calculate golds where missing
-calculate_golds <- function(row)
-{
-  if (row[["Golds"]] %in% c(NA, ""))
-  {
-    row[["Golds"]] <- sum(as.numeric(row[["10"]]), as.numeric(row[["9"]]))
-  }
-  return(row)
-}
-
-
 for (j in seq_along(filepaths))
 {
 data_sheets <- excel_sheets(paste0(data_dir, "/", filepaths[j]))
@@ -234,36 +223,41 @@ WA18_total$Round_type <- "WA18"
 portsmouth_total <- map_dfr(portsmouth_data, ~ bind_rows(.x, .id = "Sheet"), .id = "File")
 portsmouth_total$Round_type <- "Single Portsmouth"
 
+if (nrow(WA18_total) > 0) {
+  WA18_total <- dplyr::bind_rows(
+    apply(WA18_total, 1, do_the_categories, simplify = FALSE)
+  )
 
-#Record category data
-WA18_total <- dplyr::bind_rows(
-  apply(WA18_total, 1, do_the_categories, simplify = FALSE)
-)
+  if ("10+X" %in% colnames(WA18_total)) {
+    WA18_total <- WA18_total %>%
+      mutate(`10` = coalesce(`10`, `10+X`)) %>%
+      select(-`10+X`)
+  }
 
-portsmouth_total <- dplyr::bind_rows(
-  apply(portsmouth_total, 1, do_the_categories, simplify = FALSE)
-)
+  colnames(WA18_total)[c(7, 9)] <- c("Round1", "Round2")
+}
 
-portsmouth_total <- portsmouth_total %>%
-  select(-any_of(c("18m", "18m.1", "18.1", "18.2", "18M - 1", "18M - 2", "5", "X"))) %>%
-  mutate(`10` = coalesce(`10`, Tens, `10s`, `10's`)) %>%
-  filter(!Style %in% c("IQA1L", "IQA2L", "IQAFB50M", "IQJL")) %>%
-  select(-any_of(c("Tens", "10s", "10's")))
+if (nrow(portsmouth_total) > 0) {
+  portsmouth_total <- dplyr::bind_rows(
+    apply(portsmouth_total, 1, do_the_categories, simplify = FALSE)
+  )
 
-WA18_total <- WA18_total %>%
-  mutate(`10` = coalesce(`10`, `10+X`)) %>%
-  select(-`10+X`)
+  portsmouth_total <- portsmouth_total %>%
+    select(-any_of(c("18m", "18m.1", "18.1", "18.2", "18M - 1", "18M - 2", "5", "X"))) %>%
+    mutate(`10` = coalesce(`10`, Tens, `10s`, `10's`)) %>%
+    filter(!Style %in% c("IQA1L", "IQA2L", "IQAFB50M", "IQJL")) %>%
+    select(-any_of(c("Tens", "10s", "10's")))
 
-#Bind portsmouth and WA18 dataframes
-colnames(WA18_total)[c(7, 9)] <- c("Round1", "Round2")
-colnames(portsmouth_total)[c(7, 9)] <- c("Round1", "Round2")
-indoors_total <- rbind(WA18_total, portsmouth_total)
+  colnames(portsmouth_total)[c(7, 9)] <- c("Round1", "Round2")
+}
 
+if (nrow(WA18_total) > 0 & nrow(portsmouth_total) > 0) {
+  indoors_total <- rbind(WA18_total, portsmouth_total)
+  write.csv(indoors_total, "temp/ianseo_results.csv", row.names = FALSE)
+} else if (nrow(WA18_total) > 0) {
+  write.csv(WA18_total, "temp/ianseo_results.csv", row.names = FALSE)
+} else if (nrow(portsmouth_total) > 0) {
+  write.csv(portsmouth_total, "temp/ianseo_results.csv", row.names = FALSE)
+}
 
-indoors_total <- dplyr::bind_rows(
-  apply(indoors_total, 1, calculate_golds, simplify = FALSE)
-)
-
-
-write.csv(indoors_total, "temp/ianseo_results.csv", row.names = FALSE)
 unlink(data_dir, recursive=TRUE)

@@ -395,7 +395,7 @@ def DL_competition(url):
 
 class IanseoScraper(QThread):
     progress = pyqtSignal(int)
-    finished = pyqtSignal(int)
+    finished = pyqtSignal()
 
     def __init__(self, urls, parent=None):
         super(IanseoScraper, self).__init__(parent)
@@ -409,5 +409,7 @@ class IanseoScraper(QThread):
             DL_competition(url)
             i += 1
             self.progress.emit(i)
+
+        self.finished.emit()
 
         

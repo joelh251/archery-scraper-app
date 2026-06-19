@@ -5,6 +5,7 @@ from utils.ianseo_scraper import IanseoScraper
 from utils.alt_ianseo_scraper import AltIanseoScraper
 from utils.tamlyn_scraper import TamlynScraper
 from utils.compilers import *
+import sys
 
 
 class IntroPage(QWizardPage):
@@ -93,7 +94,7 @@ class altIANSEOScraperPage(QWizardPage):
         self.filepath = self.file_browser.textbox.text()
         self.links = [line.strip() for line in self.textbox.textbox.toPlainText().split('\n') if line.strip()]
         if not self.filepath and not self.links:
-            QMessageBox.warning(self, "Skipping Alternative IANSEO", "No urls of file provided, skipping standard IANSEO scraping.")
+            QMessageBox.warning(self, "Skipping Alternative IANSEO", "No urls of file provided, skipping alternative IANSEO scraping.")
             self.wizard().shared["alt_ianseo_urls"] = None
             return True
         
@@ -149,12 +150,9 @@ class compilerDirectoryPage(QWizardPage):
         super(compilerDirectoryPage, self).__init__(parent)
         # Set page text
         self.setTitle("Choose where to save results")
-        label = QLabel("Note - TamlynScore will take much longer to scrape than IANSEO.")
-        label.setWordWrap(True)
 
         # Set up layout
         layout = QVBoxLayout()
-        layout.addWidget(label)
 
         # Add directory browser
         self.directory_browser = directoryBrowser()
@@ -166,6 +164,7 @@ class compilerDirectoryPage(QWizardPage):
         self.save_dir = self.directory_browser.textbox.text()
 
         if self.save_dir:
+            self.wizard().shared["save_dir"] = self.save_dir
             return True
         else:
             QMessageBox.warning(self, "No Destination Folder", "You must select a destination folder to proceed")
@@ -175,9 +174,10 @@ class compilerDirectoryPage(QWizardPage):
 class ProgressPage(QWizardPage):
     def __init__(self, parent=None):
         super(ProgressPage, self).__init__(parent)
+
         # Set page text
         self.setTitle("Scraper Progress")
-        label = QLabel("Here, we'll learn how to use the archery scraper")
+        label = QLabel("Note - TamlynScore will take much longer to scrape than IANSEO.")
         label.setWordWrap(True)
 
         # Set layout
@@ -185,12 +185,18 @@ class ProgressPage(QWizardPage):
         self._layout.addWidget(label)
         self.setLayout(self._layout)
 
+        # Track which compilers are running 
+        self.expected_compilers = set()
+        self.finished_compilers = set()
+
     def initializePage(self):
         self.ianseo_urls = self.wizard().shared["ianseo_urls"]
         self.alt_ianseo_urls = self.wizard().shared["alt_ianseo_urls"]
         self.scrape_tamlyn = self.wizard().shared["scrape_tamlyn"]
+        self.save_dir = self.wizard().shared["save_dir"]
 
         if self.ianseo_urls:
+            self.expected_compilers.add("ianseo")
             self.ianseo_scraper = IanseoScraper(self.ianseo_urls)
             self.ianseo_progress_bar = progressBar("Ianseo Scraper Progress", len(self.ianseo_urls))
             self._layout.addWidget(self.ianseo_progress_bar)
@@ -201,16 +207,18 @@ class ProgressPage(QWizardPage):
             self.ianseo_scraper.start()
 
         if self.alt_ianseo_urls:
+            self.expected_compilers.add("alt_ianseo")
             self.alt_ianseo_scraper = AltIanseoScraper(self.alt_ianseo_urls)
             self.alt_ianseo_progress_bar = progressBar("Alternative Ianseo Scraper Progress", len(self.alt_ianseo_urls))
             self._layout.addWidget(self.alt_ianseo_progress_bar)
 
             self.alt_ianseo_scraper.progress.connect(self.alt_ianseo_progress_bar.set_progress)
-            self.alt_ianseo_scraper.finished.connect(self.compile_alt_ianseo)
+            self.alt_ianseo_scraper.finished.connect(self.clean_alt_ianseo)
             
             self.alt_ianseo_scraper.start()
 
         if self.scrape_tamlyn:
+            self.expected_compilers.add("tamlyn")
             self.tamlyn_scraper = TamlynScraper()
             self.tamlyn_progress_bar = progressBar("TamlynScore Scraper Progress", self.tamlyn_scraper.totalUrls)
             self._layout.addWidget(self.tamlyn_progress_bar)
@@ -224,13 +232,80 @@ class ProgressPage(QWizardPage):
             QMessageBox.warning(self, "Bored", "There's nothing to do.")
     
     def compile_ianseo(self):
-        # TODO add connections so ultimate compiler waits for lesser compilers to finish
         self.ianseo_compiler = basicCompilerWorker("utils/compile_ianseo.R")
+        self.ianseo_compiler.finished.connect(lambda: self.on_compiler_finished("ianseo"))
+        self.ianseo_compiler.start()
 
-    def compile_alt_ianseo(self):
-        # TODO make compiler wait until cleaner has run
+    def clean_alt_ianseo(self):
         self.alt_ianseo_cleaner = basicCompilerWorker("utils/alt_ianseo_cleaner.R")
+        self.alt_ianseo_cleaner.finished.connect(self.compile_alt_ianseo)
+        self.alt_ianseo_cleaner.start()
+    
+    def compile_alt_ianseo(self):
         self.alt_ianseo_compiler = basicCompilerWorker("utils/compile_alt_ianseo.R")
+        self.alt_ianseo_compiler.finished.connect(lambda: self.on_compiler_finished("alt_ianseo"))
+        self.alt_ianseo_compiler.start()
+     
 
     def compile_tamlyn(self):
         self.tamlyn_compiler = basicCompilerWorker("utils/compile_tamlyn.R")
+        self.tamlyn_compiler.finished.connect(lambda: self.on_compiler_finished("tamlyn"))
+        self.tamlyn_compiler.start()
+
+    def on_compiler_finished(self, name):
+        self.finished_compilers.add(name)
+
+        if self.finished_compilers == self.expected_compilers:
+            self.compile_all()    
+
+    def compile_all(self):
+        self.show_spinner()
+        self.ultimate_compiler = advancedCompilerWorker("utils/compile_ianseo_and_tamlyn.R", args=[self.save_dir])
+        self.ultimate_compiler.finished.connect(self.on_complete)
+        self.ultimate_compiler.start()
+
+    def on_complete(self):
+        self.hide_spinner()
+        filename = self.save_dir + "/total_results.csv"
+
+        results = pd.read_csv(filename)
+        num_results = len(results)
+
+        self.completed_message_box = QMessageBox(self)
+        self.completed_message_box.setWindowTitle("Finished!")
+        self.completed_message_box.setText(f"{num_results} results saved to {filename}")
+
+        close_button = self.completed_message_box.addButton("Close", QMessageBox.ButtonRole.RejectRole)
+        close_button.clicked.connect(lambda: sys.exit())
+
+        self.completed_message_box.exec()
+
+
+    def show_spinner(self):
+        self.spinner_container = QWidget()
+        spinner_layout = QHBoxLayout()
+        self.spinner_container.setLayout(spinner_layout)
+
+        self.spinner = SpinnerWidget(
+        parent=self.spinner_container,
+        size=30,
+        num_dots=12,
+        colour=QColor(0, 0, 0)
+        )
+
+        self.spinner.start()
+
+        self.spinner_text = QLabel("Compiling results (may take several minutes)")
+        spinner_layout.addWidget(self.spinner)
+        spinner_layout.addWidget(self.spinner_text)
+        spinner_layout.addStretch()
+
+        self._layout.addWidget(self.spinner_container)
+    
+    def hide_spinner(self):
+        if hasattr(self, 'spinner'):
+            self.spinner.stop()
+        if hasattr(self, 'spinner_container'):
+            self.spinner_container.hide()
+
+
