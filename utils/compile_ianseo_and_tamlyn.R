@@ -96,5 +96,6 @@ total_data <- total_data %>%
         "50" = "50+"
     ))
 
+total_data <- subset(total_data, `Tot.` != 0)
 write.csv(total_data, output_path, row.names = FALSE)
 unlink("temp", recursive=TRUE)
