@@ -3,6 +3,10 @@ App for simple scraping of Single Portsmouth and WA18 records from Ianseo and Ta
 
 All you need to do is provide URLs for Ianseo.
 
+## Running the app
+1. Ensure you have all the URLs you want to scrape saved in excel sheets.
+2. Run `main.py`
+
 ## Setup
 This app requires Python and R to be installed. 
 
